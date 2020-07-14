@@ -37,5 +37,5 @@ for folder in all_folders:
     for file in files:
         path = f+'\\'+file
         print('Editing file:', path, '...')
-        compress_resize(path, 20)
+        compress_resize(path)
 
