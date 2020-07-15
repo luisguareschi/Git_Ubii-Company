@@ -9,8 +9,6 @@ from email.mime.base import MIMEBase
 from email import encoders
 import smtplib, ssl
 
-
-
 class Cabecera:
     def __init__(self, tipo_registro, n_documento, n_cliente, desti_mercancia, fecha_entrega, moneda, condicion_pago):
         self.tipo_registro = tipo_registro
