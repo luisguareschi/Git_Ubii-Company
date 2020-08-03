@@ -123,18 +123,14 @@ def create_items(results):
         n_documento = i['id_pedido']
         unidad = i['unidad']
         cantidad = i['cantidad']
-        fecha = str(i['CreatedOn'])  # VALOR DE PRUEBA
-        year = fecha[0] + fecha[1] + fecha[2] + fecha[3]
-        month = fecha[5] + fecha[6]
-        day = fecha[8] + fecha[9]
-        fecha_new = '{}/{}/{}'.format(day, month, year)
-        material = i['id_producto']  # VALOR DE PRUEBA
-        moneda = 'USD'  # VALOR DE PRUEBA
-        condicion_pago = 'PL01'  # VALOR DE PRUEBA
-        desti_mercancia = 934264  # VALOR DE PRUEBA
-        n_cliente = 124378  # VALOR DE PRUEBA
+        fecha = ''  # PUEDE SER BLANCO
+        material = i['cod_sap']  # ESTA PENDIENTE POR CAMBIAR  (pero la direccion del dato esta bien)
+        moneda = i['moneda']  # PREG A PATRICIA
+        condicion_pago = ''  # PUEDE SER BLANCO
+        desti_mercancia = 934264  # VALOR PRUEBA, ESTA PENDIENTE POR CAMBIAR (SIMULAR TABLAS)
+        n_cliente = 124378  # VALOR DE PRUEBA, ESTA PENDIENTE POR CAMBIAR (SIMULAR TABLAS)
 
-        cabecero = Cabecera(1, n_documento, n_cliente, desti_mercancia, fecha_new, moneda, condicion_pago)
+        cabecero = Cabecera(1, n_documento, n_cliente, desti_mercancia, fecha, moneda, condicion_pago)
         posicion = Posicion(2, n_documento, material, unidad, cantidad, desti_mercancia)
         if cabecero not in items:
             items.append(cabecero)
@@ -143,11 +139,11 @@ def create_items(results):
     return items  # Lista llena de objetos cabecero y posicion
 
 def update_database():
-    update_query = text('UPDATE ubiimarket_db.dt_pedido as a, ubiimarket_db.dt_detalle_pedido as b, ubiimarket_db.dt_productos as c, ubiimarket_db.tm_unidad_presentacion as d, ubiimarket_db.dt_lote as e, ubiimarket_db.dt_almacen_ubii as f '
+    update_query = text('UPDATE ubiimarket_db.dt_pedido as a, ubiimarket_db.dt_detalle_pedido as b, ubiimarket_db.dt_productos as c, ubiimarket_db.tm_unidad_presentacion as d, ubiimarket_db.dt_lote as e, ubiimarket_db.dt_almacen_ubii as f, ubiimarket_db.dt_producto_tql as g, ubiimarket_db.tb_metodo_pago as h '
                         'SET a.tb_status_id=37 '
-                        'WHERE a.tb_status_id=24 AND a.id=b.dt_pedido_id AND b.id_producto=c.id_producto '
+                        'WHERE a.tb_status_id=24 AND a.id=b.dt_pedido_id AND b.id_producto=c.id_producto AND b.id_producto=g.id_producto '
                         'AND c.id_unidad_presentacion=d.id_presentacion AND b.id_lote=e.id_lote '
-                        'AND  e.id_almacen_ubii=f.id_almacen AND f.rif=\'J-075525973\'')
+                        'AND  e.id_almacen_ubii=f.id_almacen AND f.rif=\'J-075525973\' AND a.id_metodo_pago=h.id_metodo')
     db.engine.execute(update_query)
     print('El estado de los pedido(s)  ha sido cambiado de 24 a 37 exitosamente')
 
@@ -199,11 +195,11 @@ file2 = open('data_final.txt', 'w')
 file2.close()
 
 # Hacer Query de los datos necesarios
-query = text('SELECT a.id as id_pedido, a.tb_status_id, b.id_producto, c.id_unidad_presentacion, d.strsiglas as unidad, b.intcantidad as cantidad, b.id_lote, e.id_almacen_ubii, f.nombre_almacen, b.CreatedOn '
+query = text('SELECT a.id as id_pedido, a.tb_status_id, b.id_producto, c.id_unidad_presentacion, d.strsiglas as unidad, b.intcantidad as cantidad, b.id_lote, e.id_almacen_ubii, f.nombre_almacen, b.CreatedOn, g.cod_sap, h.moneda '
              'FROM ubiimarket_db.dt_pedido as a, ubiimarket_db.dt_detalle_pedido as b, ubiimarket_db.dt_productos as c, '
-             'ubiimarket_db.tm_unidad_presentacion as d, ubiimarket_db.dt_lote as e, ubiimarket_db.dt_almacen_ubii as f '
-             'WHERE a.tb_status_id=24 AND a.id=b.dt_pedido_id AND b.id_producto=c.id_producto AND c.id_unidad_presentacion=d.id_presentacion '
-             'AND b.id_lote=e.id_lote AND e.id_almacen_ubii=f.id_almacen AND f.rif=\'J-075525973\'')
+             'ubiimarket_db.tm_unidad_presentacion as d, ubiimarket_db.dt_lote as e, ubiimarket_db.dt_almacen_ubii as f, ubiimarket_db.dt_producto_tql as g, ubiimarket_db.tb_metodo_pago as h '
+             'WHERE a.tb_status_id=24 AND a.id=b.dt_pedido_id AND b.id_producto=c.id_producto AND b.id_producto=g.id_producto AND c.id_unidad_presentacion=d.id_presentacion '
+             'AND b.id_lote=e.id_lote AND e.id_almacen_ubii=f.id_almacen AND f.rif=\'J-075525973\' AND a.id_metodo_pago=h.id_metodo')
 results = db.engine.execute(query).fetchall()
 
 # Crear lista de datos para agregar al txt

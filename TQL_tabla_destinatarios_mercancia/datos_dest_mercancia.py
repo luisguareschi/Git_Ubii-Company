@@ -11,7 +11,8 @@ import smtplib, ssl
 
 
 class Datos_destinatario:
-    def __init__(self, nombre, direccion, codigo_postal, tlfn, rif, zona_transporte, persona_contacto):
+    def __init__(self, nombre, direccion, codigo_postal, tlfn, rif, zona_transporte, persona_contacto,
+                 centro_suministrador):
         self.nombre = nombre
         self.direccion = direccion
         self.codigo_postal = codigo_postal
@@ -19,7 +20,7 @@ class Datos_destinatario:
         self.rif = rif
         self.zona_transporte = zona_transporte
         self.persona_contacto = persona_contacto
-        self.centro_suministrador = 'Centros TQL'
+        self.centro_suministrador = centro_suministrador
 
     def __repr__(self):
         return str(self.nombre) + '\t' + str(self.direccion) + '\t' + str(self.codigo_postal) + '\t' + str(
@@ -29,26 +30,56 @@ class Datos_destinatario:
     def __eq__(self, other):
         return self.__dict__ == other.__dict__
 
-def add(results):
+
+def add(results, results2):
     # Agregar datos
     file = open('datos.txt', 'a')
     header = ['NOMBRE', 'DIRECCION', 'CODIGO POSTAL', 'TELEFONO', 'RIF', 'ZONA DE TRANSPORTE', 'PERSONA DE CONTACTO',
               'CENTRO SUMINISTRADOR']
     todos_datos = []
     todos_datos.append(header)
-    for item in results:
+    for item in results:  # id_political_div = Null
         nombre = item['strnombre_empresa']
-        direccion = item['zona'] + ', ' + item['subzona'] + ', ' + item['strdireccion']
+        direccion = str(item['zona']) + ', ' + str(item['subzona']) + ', ' + str(item['strdireccion'])
         codigo_postal = item['strcodigo_postal']
         tlfn = item['strtelefono']
         rif = item['strrif_empresa']
-        zona_transporte = ['ZONA DEFINIDA POR TQL']  # FALTA DATO!
-        persona_contacto = item['strnombre_representante']  # FALTA DATO!
-        datos = Datos_destinatario(nombre, direccion, codigo_postal, tlfn, rif, zona_transporte, persona_contacto)
+        zona_transporte = '<ZONA DEFINIDA POR TQL>'  # FALTA DATO! QUEDA POR DEFINIR POR PARTE DE TQL
+        persona_contacto = ''  # PUEDE SER BLANCO
+        centro_suministrador = ''  # POR AHORA VACIO
+        datos = Datos_destinatario(nombre, direccion, codigo_postal, tlfn, rif, zona_transporte, persona_contacto,
+                                   centro_suministrador)
         d = [datos.nombre, datos.direccion, datos.codigo_postal, datos.tlfn, datos.rif, datos.zona_transporte,
              datos.persona_contacto, datos.centro_suministrador]
         todos_datos.append(d)
         print('Entrada agregada exitosamente')
+
+    for item in results2:  # id_political_div != Null
+        nombre = item['strnombre_empresa']
+        ######## PARA DIRECCION ########
+        estado = item['state'].lower()
+        estado = estado.capitalize()
+        ciudad = item['city'].lower()
+        ciudad = ciudad.capitalize()
+        municipalidad = item['municipality'].lower()
+        municipalidad = municipalidad.capitalize()
+        parroquia = item['parish'].lower()
+        parroquia = parroquia.capitalize()
+        direccion = estado + ', ' + ciudad + ', ' + municipalidad + ', ' + parroquia + ', ' + str(item['strdireccion'])
+        ################################
+        codigo_postal = item['strcodigo_postal']
+        tlfn = item['strtelefono']
+        rif = item['strrif_empresa']
+        zona_transporte = '<ZONA DEFINIDA POR TQL>'  # FALTA DATO! QUEDA POR DEFINIR POR PARTE DE TQL
+        persona_contacto = ''  # PUEDE SER BLANCO
+        centro_suministrador = ''  # POR AHORA VACIO
+        datos2 = Datos_destinatario(nombre, direccion, codigo_postal, tlfn, rif, zona_transporte, persona_contacto,
+                                    centro_suministrador)
+        d2 = [datos2.nombre, datos2.direccion, datos2.codigo_postal, datos2.tlfn, datos2.rif, datos2.zona_transporte,
+              datos2.persona_contacto, datos2.centro_suministrador]
+        todos_datos.append(d2)
+        print('Entrada agregada exitosamente')
+
     tabla = columnar(todos_datos, no_borders=False, terminal_width=1000000, column_sep='\t', row_sep='')
     file.write(str(tabla))
     file.close()
@@ -67,12 +98,14 @@ def add(results):
     print('PROCESO EXITOSO, {} ENTRADAS CREADAS'.format(len(todos_datos)))
     os.remove('datos.txt')
 
+
 def update_database():
     update_query = text('UPDATE ubiimarket_db.dt_empresa as a, ubiimarket_db.dt_direccion as b '
                         'SET b.nueva_tql=0 '
                         'WHERE a.id_empresa=b.id_empresa AND b.tipo=\'Dirección Fiscal\' AND b.nueva_tql=1')
     db.engine.execute(update_query)
     print('Base de datos actualizada exitosamente')
+
 
 def send_email(receiver, subject, body, file_name):
     fromaddr = 'no-reply@ubiimarket.com'
@@ -107,6 +140,7 @@ def send_email(receiver, subject, body, file_name):
 
     #### CAMBIARLO A SSL #####
 
+
 # Acceder a la base de datos
 username = 'lguareschi'
 password = 'L01SGSc1r*20'
@@ -126,11 +160,16 @@ final_file.close()
 query = text(
     'SELECT a.strnombre_empresa, b.strdireccion, a.strcodigo_postal, a.strtelefono, a.strrif_empresa, a.strnombre_representante, b.nueva_tql, b.id_zona, c.zona, b.id_subzona, d.subzona '
     'FROM ubiimarket_db.dt_empresa as a, ubiimarket_db.dt_direccion as b, ubiimarket_db.dt_zona as c, ubiimarket_db.dt_subzonas as d '
-    'WHERE a.id_empresa=b.id_empresa AND b.tipo=\'Dirección Fiscal\' AND b.nueva_tql=1 AND b.id_zona=c.id AND b.id_subzona=d.id')
+    'WHERE a.id_empresa=b.id_empresa AND b.tipo=\'Dirección Fiscal\' AND b.nueva_tql=1 AND b.id_zona=c.id AND b.id_subzona=d.id AND b.id_political_division is null')
 results = db.engine.execute(query).fetchall()
 
+query2 = text(
+    'SELECT a.strnombre_empresa, b.strdireccion, a.strcodigo_postal, a.strtelefono, a.strrif_empresa, a.strnombre_representante, b.nueva_tql, b.id_zona, c.zona, b.id_subzona, d.subzona, b.id_political_division, e.state, e.city, e.municipality, e.parish '
+    'FROM ubiimarket_db.dt_empresa as a, ubiimarket_db.dt_direccion as b, ubiimarket_db.dt_zona as c, ubiimarket_db.dt_subzonas as d, ubiimarket_db.dt_political_division as e '
+    'WHERE a.id_empresa=b.id_empresa AND b.tipo=\'Dirección Fiscal\' AND b.nueva_tql=1 AND b.id_zona=c.id AND b.id_subzona=d.id AND b.id_political_division=e.id;')
+results2 = db.engine.execute(query2).fetchall()
 # Agregar datos al txt
-add(results)
+add(results, results2)
 
 # Enviar correo electonico con el archivo txt
 receiver = 'pvalencia@ubiipagos.com'
@@ -141,4 +180,3 @@ file_name = 'datos_para_destinatario_mercancia.txt'
 
 # Hacer query para actualizar la tabla
 # update_database()
-

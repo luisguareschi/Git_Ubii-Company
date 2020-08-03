@@ -9,7 +9,7 @@ def compress_resize(file_path, compression_percentage=60):
     if image.mode != 'RGB':
         image = image.convert('RGB')
     new_path = file_name + '_c.jpg'
-    print(new_path)
+    # print(new_path)
     image.save(new_path, optimize=True, quality=compression_percentage)  # El porcentaje recomendado de compresion es 60, esta por default a ese numero
     image.close()
     os.remove(file_path)
@@ -44,7 +44,7 @@ def compress_resize(file_path, compression_percentage=60):
     print('-->Archivo comprimido')
 
 ### Main Program ###
-folder_path = 'IMAGENES' # Aqui se selecciona la carpeta madre de todas las imagenes que se deseen comprimir
+folder_path = 'IMAGENES'  # Aqui se selecciona la carpeta madre de todas las imagenes que se deseen comprimir
 # Este loop va a ejecutar el metodo con todos los archivos dentro de la caperta que tengan la terminacion jpg o png
 for subdir, dirs, files in os.walk(folder_path):
     for file in files:
